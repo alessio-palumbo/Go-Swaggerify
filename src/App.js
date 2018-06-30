@@ -145,6 +145,17 @@ class App extends Component {
     })
   }
 
+  // Copy notation to clipboard
+  onCopyToClipboard = () => {
+    const swagger = document.getElementById('swagger')
+    const textField = document.createElement('textarea')
+    textField.innerHTML = swagger.innerHTML
+    document.body.appendChild(textField)
+    textField.select()
+    document.execCommand('copy')
+    textField.remove()
+  }
+
   render() {
     const { methods, method, route, description, notation, params } = this.state
     return (
@@ -198,11 +209,16 @@ class App extends Component {
             />
           </div>
           <div className="col-7 pr-4">
-            <button className="btn btn-sm mb-2">Copy Notation</button>
-            <pre>
+            <button
+              className="btn btn-sm mb-2"
+              onClick={this.onCopyToClipboard}
+            >
+              Copy Notation
+            </button>
+            <pre id="swagger">
               {notation &&
                 notation.map(line => {
-                  return line + '\n'
+                  if (line !== '') return line + '\r\n'
                 })}
             </pre>
           </div>
