@@ -44,10 +44,6 @@
   width: 1px;
 }
 
-.input-box {
-  margin-bottom: 20px;
-}
-
 /* Inputs Form */
 .btn-form {
   background-color: green !important;
@@ -55,10 +51,6 @@
   width: 48px;
   height: 37.5px;
   padding-top: 3.5px !important;
-}
-
-.empty-space {
-  width: 20px;
 }
 
 /* Notation */

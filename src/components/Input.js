@@ -14,7 +14,7 @@ export function Input({
       </label>
       <input
         id="input"
-        className="form-control form-control-sm input-box"
+        className="form-control form-control-sm mb-2"
         value={value}
         type="text"
         name={name}

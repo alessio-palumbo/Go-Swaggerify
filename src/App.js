@@ -1,6 +1,8 @@
 import React, { Component } from 'react'
 import './bootstrap-4.0.0-beta.2-dist/css/bootstrap.css'
 import './App.css'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTrashAlt } from '@fortawesome/free-solid-svg-icons'
 import { Header } from './components/Header'
 import { Input } from './components/Input'
 import { Select } from './components/Select'
@@ -14,10 +16,11 @@ class App extends Component {
     method: 'GET',
     route: '',
     description: '',
-    params: [],
-    notation: ['// swagger:operation GET ', '// ---']
+    params: {},
+    notation: ['// swagger:operation GET ', '// ---', '', '']
   }
 
+  // Define swagger method and route and generate tags and title
   onSetFirstLine = ({ method, route }) => {
     let line = '// swagger:operation '
     if (route && route.length > 2) {
@@ -43,12 +46,14 @@ class App extends Component {
     })
   }
 
+  // Change http method
   onChangeSelection = event => {
     const method = event.target.value
     const route = this.state.route
     this.setState({ method: method }, this.onSetFirstLine({ method, route }))
   }
 
+  // Update route and description
   onChangeField = event => {
     const input = event.target.name
     const value = event.target.value
@@ -92,28 +97,63 @@ class App extends Component {
 
   onClearField = () => {}
 
+  // Generate parameter
   onAddParam = ({ name, description, pos, type, required }) => {
-    const param = {
-      name: name,
-      description: description,
-      in: pos,
-      type: type,
-      required: required
-    }
+    const attrs = [name, pos, type, required, description]
+    const lines = [
+      '// - name: ' + name,
+      '\n//   in: ' + pos,
+      '\n//   type: ' + type,
+      '\n//   required: ' + required,
+      '\n//   description: ' + description
+    ]
+
+    if (!name || !pos) return
+    let param = ''
+    attrs.map((attr, idx) => {
+      if (attr !== '') {
+        param += lines[idx]
+      }
+    })
     this.setState(prevState => {
-      const params = [...prevState.params, param]
-      return { params }
+      let params = { ...prevState.params }
+      params[attrs[0]] = param
+      let newNotation = [...prevState.notation]
+      if (newNotation[3] !== '') {
+        newNotation[3] += '\n'
+      }
+      newNotation[3] += param
+      return { params: params, notation: newNotation }
+    })
+  }
+
+  // Remove parameter
+  onRemoveParam = event => {
+    const param = event.target.innerText
+    this.setState(prevState => {
+      const params = { ...prevState.params }
+      delete params[param]
+      const updatedNotation = [...prevState.notation]
+      updatedNotation[3] = ''
+      Object.values(params).map(text => {
+        updatedNotation[3] += text
+      })
+      return {
+        notation: updatedNotation,
+        params: params
+      }
     })
   }
 
   render() {
-    const { methods, method, route, description, notation } = this.state
+    const { methods, method, route, description, notation, params } = this.state
     return (
       <div className="App">
         <Header />
         <div className="row p-2 m-0">
-          <div className="col-6 px-5">
+          <div className="col-5 px-5">
             <Select
+              style="mb-2"
               name="Method"
               values={methods}
               active={method}
@@ -134,24 +174,31 @@ class App extends Component {
             />
             <hr />
             <Form onAddParam={this.onAddParam} />
-            {this.state.params &&
-              this.state.params.map(param => (
-                <p>
-                  {param.name} {param.in} {param.type} {param.require}{' '}
-                  {param.description}
-                </p>
-              ))}
+            <div className="d-flex justify-content-start align-items-center">
+              {params &&
+                Object.keys(params).map(param => {
+                  return (
+                    <button
+                      className="btn btn-sm btn-danger mt-2"
+                      onClick={this.onRemoveParam}
+                    >
+                      {param}
+                      <FontAwesomeIcon icon={faTrashAlt} className="ml-1" />
+                    </button>
+                  )
+                })}
+            </div>
             <hr />
             <Input
               name="Responses"
               value="TODO"
               placeholder=""
-              onChangeField
-              onClearField
+              onChangeField={this.onChangeField}
+              onClearField={this.onClearField}
             />
           </div>
-          <div className="col-6 pr-4">
-            <button className="btn text-center mb-3">Copy Notation</button>
+          <div className="col-7 pr-4">
+            <button className="btn btn-sm mb-2">Copy Notation</button>
             <pre>
               {notation &&
                 notation.map(line => {

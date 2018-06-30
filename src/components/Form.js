@@ -20,8 +20,8 @@ export function Form({ onAddParam }) {
         onAddParam({ name, description, pos, type, required })
       }}
     >
-      <div className="d-flex justify-content-between input-box ">
-        <div>
+      <div className="d-flex justify-content-between">
+        <div className="mr-2">
           <input
             className="form-control form-control-sm"
             type="text"
@@ -29,7 +29,6 @@ export function Form({ onAddParam }) {
             placeholder="Parameter name"
           />
         </div>
-        <span className="empty-space" />
         <div>
           <input
             className="form-control form-control-sm"
@@ -39,19 +38,10 @@ export function Form({ onAddParam }) {
           />
         </div>
       </div>
-      <div className="d-flex justify-content-between">
-        <div className="form-group w-25">
-          <Select name="pIn" values={['path', 'query', 'body']} />
-        </div>
-
-        <div className="form-group w-25">
-          <Select name="pType" values={['UUID', 'string', 'integer', 'date']} />
-        </div>
-
-        <div className="form-group w-25">
-          <Select name="pRequired" values={['false', 'true']} />
-        </div>
-
+      <div className="d-flex justify-content-between mt-1">
+        <Select name="pIn" values={['path', 'query', 'body']} />
+        <Select name="pType" values={['UUID', 'string', 'integer', 'date']} />
+        <Select name="pRequired" values={['false', 'true']} />
         <button type="submit" className="btn btn-form">
           <FontAwesomeIcon icon={faPlus} className="text-white" />
         </button>

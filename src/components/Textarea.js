@@ -2,7 +2,7 @@ import React from 'react'
 
 export function Textarea({ name, value, placeholder, onChangeField }) {
   return (
-    <div class="form-group">
+    <div className="form-group">
       <label htmlFor="textarea" className="input-labels">
         {name}
       </label>
@@ -12,9 +12,8 @@ export function Textarea({ name, value, placeholder, onChangeField }) {
         className="form-control form-control-sm"
         placeholder={placeholder}
         onChange={onChangeField}
-      >
-        {value}
-      </textarea>
+        defaultValue={value}
+      />
     </div>
   )
 }
