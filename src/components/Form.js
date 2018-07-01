@@ -42,7 +42,7 @@ export function Form({ onAddParam }) {
         <Select name="pIn" values={['path', 'query', 'body']} />
         <Select name="pType" values={['UUID', 'string', 'integer', 'date']} />
         <Select name="pRequired" values={['false', 'true']} />
-        <button type="submit" className="btn btn-form">
+        <button type="submit" className="btn btn-form btn-primary">
           <FontAwesomeIcon icon={faPlus} className="text-white" />
         </button>
       </div>

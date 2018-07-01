@@ -8,30 +8,36 @@ import { Input } from './components/Input'
 import { Select } from './components/Select'
 import { Form } from './components/Form'
 import { Textarea } from './components/Textarea'
+import { Responses } from './components/Responses'
 import { Output } from './components/Output'
 
 class App extends Component {
   state = {
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     method: 'GET',
+    title: '',
     route: '',
     description: '',
     params: {},
-    notation: ['// swagger:operation GET ', '// ---', '', '']
+    responses: {},
+    response: {},
+    notation: ['', '// swagger:operation GET ', '// ---', '', '', '']
   }
 
   // Define swagger method and route and generate tags and title
   onSetFirstLine = ({ method, route }) => {
     let line = '// swagger:operation '
+    let title
     if (route && route.length > 2) {
       const routeNames = route.substring(1).split('/')
       let tag = routeNames[0]
-      let title = method[0] + method.substring(1).toLowerCase()
+      title = method[0] + method.substring(1).toLowerCase()
       routeNames.map(name => {
         if (name !== '' && name.indexOf('{') === -1) {
           let first = name[0].toUpperCase()
           title += '-' + first + name.substring(1)
         }
+        return false
       })
       line += `${method} ${route} ${tag} ${tag} ${title}`
     } else {
@@ -39,9 +45,10 @@ class App extends Component {
     }
     this.setState(prevState => {
       let newNotation = [...prevState.notation]
-      newNotation[0] = line
+      newNotation[1] = line
       return {
-        notation: newNotation
+        notation: newNotation,
+        title: title
       }
     })
   }
@@ -79,11 +86,11 @@ class App extends Component {
             }
             if (lines !== '') lines += '\n//   '
             lines += descr.substring(0, width).trim()
-          } while ((descr = descr.substring(width, descr.length).trim()) != '')
+          } while ((descr = descr.substring(width, descr.length).trim()) !== '')
 
           this.setState(prevState => {
             let newNotation = [...prevState.notation]
-            newNotation[2] = lines
+            newNotation[3] = lines
             return {
               notation: newNotation
             }
@@ -111,18 +118,17 @@ class App extends Component {
     if (!name || !pos) return
     let param = ''
     attrs.map((attr, idx) => {
-      if (attr !== '') {
-        param += lines[idx]
-      }
+      if (attr !== '') return (param += lines[idx])
+      return false
     })
     this.setState(prevState => {
       let params = { ...prevState.params }
       params[attrs[0]] = param
       let newNotation = [...prevState.notation]
-      if (newNotation[3] !== '') {
-        newNotation[3] += '\n'
+      if (newNotation[4] !== '') {
+        newNotation[4] += '\n'
       }
-      newNotation[3] += param
+      newNotation[4] += param
       return { params: params, notation: newNotation }
     })
   }
@@ -134,13 +140,65 @@ class App extends Component {
       const params = { ...prevState.params }
       delete params[param]
       const updatedNotation = [...prevState.notation]
-      updatedNotation[3] = ''
-      Object.values(params).map(text => {
-        updatedNotation[3] += text
-      })
+      updatedNotation[4] = ''
+      Object.values(params).map(text => (updatedNotation[4] += text))
       return {
         notation: updatedNotation,
         params: params
+      }
+    })
+  }
+
+  onAddResponse = event => {
+    const btn = event.target
+    btn.className = btn.className.replace('btn-success', 'btn-danger')
+    const status = event.target.innerText
+    if (this.state.responses[status]) return this.onRemoveResponse(btn, status)
+    this.setState(prevState => {
+      const notation = [...prevState.notation]
+      let response = { ...prevState.response }
+      if (notation[5] === '') notation[5] = '// responses:'
+      const responses = { ...prevState.responses }
+      if (status === '204') {
+        responses[status] = `\n// "${status}": No Content`
+        notation[5] += responses[status]
+      } else {
+        const respModel = this.state.title
+          ? this.state.title.replace('-', '') + 'Response'
+          : ''
+        response[
+          status
+        ] = `// OK\n// swagger:response ${respModel}\ntype ${respModel} struct {\n  Body YourModel\n}\n`
+        notation[0] = response[status]
+        responses[
+          status
+        ] = `\n// "${status}": {$ref: "#/responses/${respModel}"}`
+        notation[5] += responses[status]
+      }
+      return {
+        notation: notation,
+        responses: responses,
+        response: response
+      }
+    })
+  }
+
+  onRemoveResponse = (btn, status) => {
+    btn.className = btn.className.replace('btn-danger', 'btn-success')
+    this.setState(prevState => {
+      const responses = { ...prevState.responses }
+      const response = { ...prevState.response }
+      delete responses[status]
+      delete response[status]
+      const notation = [...prevState.notation]
+      notation[5] = Object.keys(response).length === 0 ? '' : '// responses:'
+      notation[0] =
+        Object.keys(response).length === 0 ? '' : Object.values(response)[0]
+      Object.values(responses).map(resp => (notation[5] += resp))
+      return {
+        responses: responses,
+        response: response,
+        notation: notation
       }
     })
   }
@@ -164,7 +222,7 @@ class App extends Component {
         <div className="row p-2 m-0">
           <div className="col-5 px-5">
             <Select
-              style="mb-2"
+              style={`mb-2`}
               name="Method"
               values={methods}
               active={method}
@@ -190,7 +248,7 @@ class App extends Component {
                 Object.keys(params).map(param => {
                   return (
                     <button
-                      className="btn btn-sm btn-danger mt-2"
+                      className="btn btn-sm btn-danger mt-2 mr-2"
                       onClick={this.onRemoveParam}
                     >
                       {param}
@@ -200,27 +258,13 @@ class App extends Component {
                 })}
             </div>
             <hr />
-            <Input
-              name="Responses"
-              value="TODO"
-              placeholder=""
-              onChangeField={this.onChangeField}
-              onClearField={this.onClearField}
-            />
+            <Responses onAddResponse={this.onAddResponse} />
           </div>
           <div className="col-7 pr-4">
-            <button
-              className="btn btn-sm mb-2"
-              onClick={this.onCopyToClipboard}
-            >
-              Copy Notation
-            </button>
-            <pre id="swagger">
-              {notation &&
-                notation.map(line => {
-                  if (line !== '') return line + '\r\n'
-                })}
-            </pre>
+            <Output
+              notation={notation}
+              onCopyToClipboard={this.onCopyToClipboard}
+            />
           </div>
         </div>
       </div>

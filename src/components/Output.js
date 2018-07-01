@@ -1,10 +1,14 @@
 import React, { Fragment } from 'react'
 
-export function Output({ notation }) {
+export function Output({ notation, onCopyToClipboard }) {
   return (
-    <Fragment className="bg-black text-green">
-      <h1>Notation</h1>
-      <pre>{notation}</pre>
+    <Fragment>
+      <button className="btn btn-sm mb-2" onClick={onCopyToClipboard}>
+        Copy Notation
+      </button>
+      <pre id="swagger">
+        {notation && notation.map(line => line !== '' && line + '\r\n')}
+      </pre>
     </Fragment>
   )
 }
