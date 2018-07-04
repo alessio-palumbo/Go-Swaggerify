@@ -6,6 +6,7 @@ import { Select } from './Select'
 export function Form({ onAddParam }) {
   return (
     <form
+      id="paramForm"
       onSubmit={event => {
         event.preventDefault()
 
@@ -40,9 +41,9 @@ export function Form({ onAddParam }) {
       </div>
       <div className="d-flex justify-content-between mt-1">
         <Select name="pIn" values={['path', 'query', 'body']} />
-        <Select name="pType" values={['UUID', 'string', 'integer', 'date']} />
+        <Select name="pType" values={['UUID', 'string', 'integer', 'date', 'bool']} />
         <Select name="pRequired" values={['false', 'true']} />
-        <button type="submit" className="btn btn-form btn-primary">
+        <button type="submit" className="btn btn-form btn-dark">
           <FontAwesomeIcon icon={faPlus} className="text-white" />
         </button>
       </div>

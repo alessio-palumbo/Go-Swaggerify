@@ -24,6 +24,10 @@ class App extends Component {
     notation: ['', '// swagger:operation GET ', '// ---', '', '', '']
   }
 
+  onReset = () => {
+    window.location.reload()
+  }
+
   // Define swagger method and route and generate tags and title
   onSetFirstLine = ({ method, route }) => {
     let line = '// swagger:operation '
@@ -31,15 +35,33 @@ class App extends Component {
     if (route && route.length > 2) {
       const routeNames = route.substring(1).split('/')
       let tag = routeNames[0]
-      title = method[0] + method.substring(1).toLowerCase()
+      title = method === 'PUT' ? 'Update' : method[0] + method.substring(1).toLowerCase()
+      // Singularize route parent if last children is plural for naming purposes
+      const lastRoute = routeNames[routeNames.length - 1]
+      if (routeNames.length > 2 && lastRoute.substring(lastRoute.length - 1) === 's') {
+        let firstRoute = routeNames[0]
+        routeNames[0] = firstRoute.substring(0, firstRoute.length - 1)
+      }
       routeNames.map(name => {
-        if (name !== '' && name.indexOf('{') === -1) {
-          let first = name[0].toUpperCase()
-          title += '-' + first + name.substring(1)
+        if (name !== '') {
+          if (name.indexOf('{') === -1) {
+            let first = name[0].toUpperCase()
+            title += '-' + first + name.substring(1)
+          } else if (name.indexOf('{') !== -1 && name.indexOf('}') !== -1) {
+            let pName = name.substring(1, name.length - 1)
+            // TODO replace path param when route is changed
+            this.onAddParam({
+              name: pName,
+              description: '',
+              pos: 'path',
+              type: 'UUID',
+              required: 'true'
+            })
+          }
         }
         return false
       })
-      line += `${method} ${route} ${tag} ${tag} ${title}`
+      line += `${method} ${route} ${tag} ${title}`
     } else {
       line += `${method}`
     }
@@ -73,11 +95,13 @@ class App extends Component {
         })
         break
       case 'Description':
-        const newDescr = '// description: ' + value
+        let newDescr = ''
+        if (value !== '')
+          newDescr = '// description: ' + value.split('\n').join('\n//   ')
         this.setState({ description: newDescr }, function() {
           let descr = this.state.description
           let lines = ''
-          const baseWidth = 80
+          const baseWidth = 90
           let width = baseWidth
           do {
             // Make width flexible to avoid cutting through words
@@ -108,7 +132,7 @@ class App extends Component {
   onAddParam = ({ name, description, pos, type, required }) => {
     const attrs = [name, pos, type, required, description]
     const lines = [
-      '// - name: ' + name,
+      '\n// - name: ' + name,
       '\n//   in: ' + pos,
       '\n//   type: ' + type,
       '\n//   required: ' + required,
@@ -123,28 +147,28 @@ class App extends Component {
     })
     this.setState(prevState => {
       let params = { ...prevState.params }
+      if (params[attrs[0]]) return
       params[attrs[0]] = param
       let newNotation = [...prevState.notation]
-      if (newNotation[4] !== '') {
-        newNotation[4] += '\n'
-      }
+      if (newNotation[4] === '') newNotation[4] = '// parameters:'
       newNotation[4] += param
       return { params: params, notation: newNotation }
     })
+    document.getElementById('paramForm').reset()
   }
 
   // Remove parameter
   onRemoveParam = event => {
-    const param = event.target.innerText
+    const param = event.target.name
     this.setState(prevState => {
       const params = { ...prevState.params }
       delete params[param]
       const updatedNotation = [...prevState.notation]
-      updatedNotation[4] = ''
+      updatedNotation[4] = Object.keys(params).length === 0 ? '' : '// parameters:'
       Object.values(params).map(text => (updatedNotation[4] += text))
       return {
-        notation: updatedNotation,
-        params: params
+        params: params,
+        notation: updatedNotation
       }
     })
   }
@@ -160,19 +184,17 @@ class App extends Component {
       if (notation[5] === '') notation[5] = '// responses:'
       const responses = { ...prevState.responses }
       if (status === '204') {
-        responses[status] = `\n// "${status}": No Content`
+        responses[status] = `\n//   ${status}: {description: "No Content"}`
         notation[5] += responses[status]
       } else {
         const respModel = this.state.title
-          ? this.state.title.replace('-', '') + 'Response'
+          ? this.state.title.split('-').join('') + 'Response'
           : ''
         response[
           status
-        ] = `// OK\n// swagger:response ${respModel}\ntype ${respModel} struct {\n  Body YourModel\n}\n`
+        ] = `// OK\n// swagger:response ${respModel}\ntype ${respModel} struct {\n  Body struct {\n    ModelName ModelType \`json:"modelname"\`\n  }\n}\n`
         notation[0] = response[status]
-        responses[
-          status
-        ] = `\n// "${status}": {$ref: "#/responses/${respModel}"}`
+        responses[status] = `\n//   ${status}: {$ref: "#/responses/${respModel}"}`
         notation[5] += responses[status]
       }
       return {
@@ -192,8 +214,7 @@ class App extends Component {
       delete response[status]
       const notation = [...prevState.notation]
       notation[5] = Object.keys(response).length === 0 ? '' : '// responses:'
-      notation[0] =
-        Object.keys(response).length === 0 ? '' : Object.values(response)[0]
+      notation[0] = Object.keys(response).length === 0 ? '' : Object.values(response)[0]
       Object.values(responses).map(resp => (notation[5] += resp))
       return {
         responses: responses,
@@ -221,6 +242,9 @@ class App extends Component {
         <Header />
         <div className="row p-2 m-0">
           <div className="col-5 px-5">
+            <button className="btn btn-sm btn-dark mb-2" onClick={this.onReset}>
+              Reset
+            </button>
             <Select
               style={`mb-2`}
               name="Method"
@@ -250,6 +274,7 @@ class App extends Component {
                     <button
                       className="btn btn-sm btn-danger mt-2 mr-2"
                       onClick={this.onRemoveParam}
+                      name={param}
                     >
                       {param}
                       <FontAwesomeIcon icon={faTrashAlt} className="ml-1" />
@@ -261,10 +286,7 @@ class App extends Component {
             <Responses onAddResponse={this.onAddResponse} />
           </div>
           <div className="col-7 pr-4">
-            <Output
-              notation={notation}
-              onCopyToClipboard={this.onCopyToClipboard}
-            />
+            <Output notation={notation} onCopyToClipboard={this.onCopyToClipboard} />
           </div>
         </div>
       </div>
