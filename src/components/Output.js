@@ -6,9 +6,7 @@ export function Output({ notation, onCopyToClipboard }) {
       <button className="btn btn-sm btn-dark mb-2" onClick={onCopyToClipboard}>
         Copy Notation
       </button>
-      <pre id="swagger">
-        {notation && notation.map(line => line !== '' && line + '\r\n')}
-      </pre>
+      <pre id="swagger">{notation && notation.map(line => line !== '' && line + '\r\n')}</pre>
     </Fragment>
   )
 }

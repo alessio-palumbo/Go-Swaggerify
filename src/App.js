@@ -19,9 +19,10 @@ class App extends Component {
     route: '',
     description: '',
     params: {},
+    request: {},
     responses: {},
     response: {},
-    notation: ['', '// swagger:operation GET ', '// ---', '', '', '']
+    notation: ['', '', '// swagger:operation GET ', '// ---', '', '', '']
   }
 
   onReset = () => {
@@ -67,7 +68,16 @@ class App extends Component {
     }
     this.setState(prevState => {
       let newNotation = [...prevState.notation]
-      newNotation[1] = line
+      newNotation[2] = line
+      // If the method is POST or PUT then create a request object
+      if (method === 'POST' || method === 'PUT') {
+        const reqModel = title ? title.split('-').join('') + 'Request' : 'Request'
+        newNotation[0] =
+          `// swagger:parameters ${title || ''}\n` +
+          `type ${reqModel} struct {\n` +
+          `  // in: body\n  Body struct {\n` +
+          `    ModelName ModelType \`json:"modelname"\`\n  }\n}\n`
+      }
       return {
         notation: newNotation,
         title: title
@@ -96,8 +106,7 @@ class App extends Component {
         break
       case 'Description':
         let newDescr = ''
-        if (value !== '')
-          newDescr = '// description: ' + value.split('\n').join('\n//   ')
+        if (value !== '') newDescr = '// description: ' + value.split('\n').join('\n//   ')
         this.setState({ description: newDescr }, function() {
           let descr = this.state.description
           let lines = ''
@@ -114,7 +123,7 @@ class App extends Component {
 
           this.setState(prevState => {
             let newNotation = [...prevState.notation]
-            newNotation[3] = lines
+            newNotation[4] = lines
             return {
               notation: newNotation
             }
@@ -150,8 +159,8 @@ class App extends Component {
       if (params[attrs[0]]) return
       params[attrs[0]] = param
       let newNotation = [...prevState.notation]
-      if (newNotation[4] === '') newNotation[4] = '// parameters:'
-      newNotation[4] += param
+      if (newNotation[5] === '') newNotation[5] = '// parameters:'
+      newNotation[5] += param
       return { params: params, notation: newNotation }
     })
     document.getElementById('paramForm').reset()
@@ -164,8 +173,8 @@ class App extends Component {
       const params = { ...prevState.params }
       delete params[param]
       const updatedNotation = [...prevState.notation]
-      updatedNotation[4] = Object.keys(params).length === 0 ? '' : '// parameters:'
-      Object.values(params).map(text => (updatedNotation[4] += text))
+      updatedNotation[5] = Object.keys(params).length === 0 ? '' : '// parameters:'
+      Object.values(params).map(text => (updatedNotation[5] += text))
       return {
         params: params,
         notation: updatedNotation
@@ -181,21 +190,22 @@ class App extends Component {
     this.setState(prevState => {
       const notation = [...prevState.notation]
       let response = { ...prevState.response }
-      if (notation[5] === '') notation[5] = '// responses:'
+      if (notation[6] === '') notation[6] = '// responses:'
       const responses = { ...prevState.responses }
       if (status === '204') {
         responses[status] = `\n//   ${status}: {description: "No Content"}`
-        notation[5] += responses[status]
+        notation[6] += responses[status]
       } else {
-        const respModel = this.state.title
-          ? this.state.title.split('-').join('') + 'Response'
-          : ''
-        response[
-          status
-        ] = `// OK\n// swagger:response ${respModel}\ntype ${respModel} struct {\n  Body struct {\n    ModelName ModelType \`json:"modelname"\`\n  }\n}\n`
-        notation[0] = response[status]
+        const respModel = this.state.title ? this.state.title.split('-').join('') + 'Response' : ''
+        response[status] =
+          `// OK\n` +
+          `// swagger:response ${respModel}\n` +
+          `type ${respModel} struct {\n` +
+          `  Body struct {\n` +
+          `    ModelName ModelType \`json:"modelname"\`\n  }\n}\n`
+        notation[1] = response[status]
         responses[status] = `\n//   ${status}: {$ref: "#/responses/${respModel}"}`
-        notation[5] += responses[status]
+        notation[6] += responses[status]
       }
       return {
         notation: notation,
@@ -213,9 +223,9 @@ class App extends Component {
       delete responses[status]
       delete response[status]
       const notation = [...prevState.notation]
-      notation[5] = Object.keys(response).length === 0 ? '' : '// responses:'
-      notation[0] = Object.keys(response).length === 0 ? '' : Object.values(response)[0]
-      Object.values(responses).map(resp => (notation[5] += resp))
+      notation[6] = Object.keys(response).length === 0 ? '' : '// responses:'
+      notation[1] = Object.keys(response).length === 0 ? '' : Object.values(response)[0]
+      Object.values(responses).map(resp => (notation[6] += resp))
       return {
         responses: responses,
         response: response,
@@ -271,11 +281,7 @@ class App extends Component {
               {params &&
                 Object.keys(params).map(param => {
                   return (
-                    <button
-                      className="btn btn-sm btn-danger mt-2 mr-2"
-                      onClick={this.onRemoveParam}
-                      name={param}
-                    >
+                    <button className="btn btn-sm btn-danger mt-2 mr-2" onClick={this.onRemoveParam} name={param}>
                       {param}
                       <FontAwesomeIcon icon={faTrashAlt} className="ml-1" />
                     </button>
