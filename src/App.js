@@ -77,6 +77,8 @@ class App extends Component {
           `type ${reqModel} struct {\n` +
           `  // in: body\n  Body struct {\n` +
           `    ModelName ModelType \`json:"modelname"\`\n  }\n}\n`
+      } else {
+        newNotation[0] = ''
       }
       return {
         notation: newNotation,
