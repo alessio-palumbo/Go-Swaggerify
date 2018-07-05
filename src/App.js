@@ -51,13 +51,27 @@ class App extends Component {
             title += '-' + first + name.substring(1)
           } else if (name.indexOf('{') !== -1 && name.indexOf('}') !== -1) {
             let pName = name.substring(1, name.length - 1)
-            // TODO replace path param when route is changed
             this.onAddParam({
               name: pName,
               description: '',
               pos: 'path',
               type: 'UUID',
               required: 'true'
+            })
+            // Remove path param if changed
+          } else if (name.indexOf('{') !== -1 || name.indexOf('}') !== -1) {
+            let pName = name.indexOf('{') !== -1 ? name.substring(1, name.length) : name.substring(0, name.length - 1)
+            this.setState(prevState => {
+              const params = { ...prevState.params }
+              if (Object.keys(params).length === 0) return
+              delete params[pName]
+              const notation = [...prevState.notation]
+              notation[5] = Object.keys(params).length === 0 ? '' : '// parameters:'
+              Object.values(params).map(text => (notation[5] += text))
+              return {
+                params: params,
+                notation: notation
+              }
             })
           }
         }
@@ -282,9 +296,14 @@ class App extends Component {
             <Form onAddParam={this.onAddParam} />
             <div className="d-flex justify-content-start align-items-center">
               {params &&
-                Object.keys(params).map(param => {
+                Object.keys(params).map((param, idx) => {
                   return (
-                    <button className="btn btn-sm btn-danger mt-2 mr-2" onClick={this.onRemoveParam} name={param}>
+                    <button
+                      key={idx}
+                      className="btn btn-sm btn-danger mt-2 mr-2"
+                      onClick={this.onRemoveParam}
+                      name={param}
+                    >
                       {param}
                       <FontAwesomeIcon icon={faTrashAlt} className="ml-1" />
                     </button>
