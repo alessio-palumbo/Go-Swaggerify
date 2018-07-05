@@ -43,12 +43,11 @@ class App extends Component {
       if (method === 'PUT') title = 'Update'
       if (method === 'POST') title = 'Create'
       // Singularize route parent if a param and a children are present
-      if (routeNames.length > 2 && routeNames[1].indexOf('{') !== -1) {
-        let firstRoute = routeNames[0]
-        if (firstRoute.substring(firstRoute.length - 3, firstRoute.length) === 'ies') {
-          routeNames[0] = firstRoute.substring(0, firstRoute.length - 3) + 'y'
+      if (routeNames.length > 1 && tag[tag.length - 1] === 's' && routeNames[1].indexOf('{') !== -1) {
+        if (tag.substring(tag.length - 3, tag.length) === 'ies') {
+          routeNames[0] = tag.substring(0, tag.length - 3) + 'y'
         } else {
-          routeNames[0] = firstRoute.substring(0, firstRoute.length - 1)
+          routeNames[0] = tag.substring(0, tag.length - 1)
         }
       }
       routeNames.map(name => {
@@ -57,6 +56,7 @@ class App extends Component {
             let first = name[0].toUpperCase()
             title += '-' + first + name.substring(1)
           } else if (name.indexOf('{') !== -1 && name.indexOf('}') !== -1) {
+            // TODO if a user change the name within the curly braces it will keep adding param btns
             let pName = name.substring(1, name.length - 1)
             this.onAddParam({
               name: pName,
@@ -81,15 +81,28 @@ class App extends Component {
       let newNotation = [...prevState.notation]
       newNotation[2] = line
       // If the method is POST or PUT then create a request object
+      const reqModel = title ? title.split('-').join('') + 'Request' : 'Request'
       if (method === 'POST' || method === 'PUT') {
-        const reqModel = title ? title.split('-').join('') + 'Request' : 'Request'
         newNotation[0] =
           `// swagger:parameters ${title || ''}\n` +
           `type ${reqModel} struct {\n` +
           `  // in: body\n  Body struct {\n` +
           `    ModelName ModelType \`json:"modelname"\`\n  }\n}\n`
+        // add name and in:body to parameters TODO: refactor
+        const bodyParam = `// parameters:\n// - name: ${reqModel}\n//   in: body`
+        if (newNotation[5] === '') {
+          newNotation[5] = bodyParam
+        } else {
+          if (newNotation[5].indexOf('in: body') !== -1) {
+            const previous = newNotation[5].substring(0, newNotation[5].indexOf('in: body') + 8)
+            newNotation[5] = newNotation[5].replace(previous, bodyParam)
+          } else {
+            newNotation[5] = bodyParam + newNotation[5].substring(14, newNotation[5].length)
+          }
+        }
       } else {
         newNotation[0] = ''
+        this.deleteParam(reqModel)
       }
       return {
         notation: newNotation,
@@ -187,7 +200,7 @@ class App extends Component {
       if (Object.keys(params).length === 0) return
       // If deleting a path parameter the route need to be updated too
       let route = prevState.route
-      if (params[param].indexOf(param) !== -1) {
+      if (params[param] && params[param].indexOf(param) !== -1) {
         route = route.replace(`{${param}}`, '')
       }
       delete params[param]
