@@ -42,7 +42,11 @@ class App extends Component {
       // Singularize route parent if a param and a children are present
       if (routeNames.length > 2 && routeNames[1].indexOf('{') !== -1) {
         let firstRoute = routeNames[0]
-        routeNames[0] = firstRoute.substring(0, firstRoute.length - 1)
+        if (firstRoute.substring(firstRoute.length - 3, firstRoute.length) === 'ies') {
+          routeNames[0] = firstRoute.substring(0, firstRoute.length - 3) + 'y'
+        } else {
+          routeNames[0] = firstRoute.substring(0, firstRoute.length - 1)
+        }
       }
       routeNames.map(name => {
         if (name !== '') {
