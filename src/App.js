@@ -34,7 +34,10 @@ class App extends Component {
     let line = '// swagger:operation '
     let title
     if (route && route.length > 2) {
-      const routeNames = route.substring(1).split('/')
+      const routeNames = route
+        .trim()
+        .substring(1)
+        .split('/')
       let tag = routeNames[0]
       title = method[0] + method.substring(1).toLowerCase()
       if (method === 'PUT') title = 'Update'
