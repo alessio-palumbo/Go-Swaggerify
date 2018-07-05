@@ -36,10 +36,12 @@ class App extends Component {
     if (route && route.length > 2) {
       const routeNames = route.substring(1).split('/')
       let tag = routeNames[0]
-      title = method === 'PUT' ? 'Update' : method[0] + method.substring(1).toLowerCase()
+      let title = method[0] + method.substring(1).toLowerCase()
+      if (method === 'PUT') title = 'Update'
+      if (method === 'POST') title = 'Create'
       // Singularize route parent if last children is plural for naming purposes
       const lastRoute = routeNames[routeNames.length - 1]
-      if (routeNames.length > 2 && lastRoute.substring(lastRoute.length - 1) === 's') {
+      if (routeNames.length > 2 && routeNames[1].indexOf('{') !== -1) {
         let firstRoute = routeNames[0]
         routeNames[0] = firstRoute.substring(0, firstRoute.length - 1)
       }
