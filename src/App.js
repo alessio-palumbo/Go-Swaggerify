@@ -68,18 +68,7 @@ class App extends Component {
             // Remove path param if changed
           } else if (name.indexOf('{') !== -1 || name.indexOf('}') !== -1) {
             let pName = name.indexOf('{') !== -1 ? name.substring(1, name.length) : name.substring(0, name.length - 1)
-            this.setState(prevState => {
-              const params = { ...prevState.params }
-              if (Object.keys(params).length === 0) return
-              delete params[pName]
-              const notation = [...prevState.notation]
-              notation[5] = Object.keys(params).length === 0 ? '' : '// parameters:'
-              Object.values(params).map(text => (notation[5] += text))
-              return {
-                params: params,
-                notation: notation
-              }
-            })
+            this.deleteParam(pName)
           }
         }
         return false
@@ -190,20 +179,33 @@ class App extends Component {
     document.getElementById('paramForm').reset()
   }
 
-  // Remove parameter
-  onRemoveParam = event => {
-    const param = event.target.name
+  // Delete parameter
+  deleteParam = param => {
     this.setState(prevState => {
       const params = { ...prevState.params }
+      // Handle repeating setState from route call when there is no param
+      if (Object.keys(params).length === 0) return
+      // If deleting a path parameter the route need to be updated too
+      let route = prevState.route
+      if (params[param].indexOf(param) !== -1) {
+        route = route.replace(`{${param}}`, '')
+      }
       delete params[param]
       const updatedNotation = [...prevState.notation]
       updatedNotation[5] = Object.keys(params).length === 0 ? '' : '// parameters:'
       Object.values(params).map(text => (updatedNotation[5] += text))
       return {
         params: params,
-        notation: updatedNotation
+        notation: updatedNotation,
+        route: route
       }
     })
+  }
+
+  // Remove parameter from the list
+  onRemoveParam = event => {
+    const param = event.target.name
+    this.deleteParam(param)
   }
 
   onAddResponse = event => {
